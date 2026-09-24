@@ -3,105 +3,399 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>应用下载引导</title>
-  
-  <!-- 1. 防护样式：未通过验证前隐匿页面内容 -->
-  <style id="protection-style">
-    body { display: none !important; }
-  </style>
-
-  <!-- 2. 动态邀请码核心拦截逻辑 -->
-  <script>
-    (function() {
-      // ================= 密钥配置 =================
-      var SECRET_SALT = "paw"; // 专属固定密钥
-      // ============================================
-
-      var now = new Date();
-      var month = String(now.getMonth() + 1).padStart(2, '0');
-      var day = String(now.getDate()).padStart(2, '0');
-
-      // 拼接当日专属邀请码（如：0924paw）
-      var TODAY_CODE = (month + day + SECRET_SALT).toLowerCase();
-
-      var input = prompt("🔐 本页面已受保护，请输入动态邀请码：");
-      var userCode = input ? input.trim().toLowerCase() : "";
-
-      if (userCode === TODAY_CODE) {
-        function unlock() {
-          var style = document.getElementById("protection-style");
-          if (style) style.remove();
-        }
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", unlock);
-        } else {
-          unlock();
-        }
-      } else {
-        alert("❌ 邀请码错误或已失效！");
-        window.onload = function() {
-          document.body.style.display = "block";
-          document.body.innerHTML = `
-            <div style="text-align: center; padding: 100px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-              <div style="font-size: 50px; margin-bottom: 20px;">⚠️</div>
-              <h2 style="color: #e74c3c; margin-bottom: 12px; font-size: 22px;">访问验证失败</h2>
-              <p style="color: #666; font-size: 15px; line-height: 1.6;">邀请码错误或已过期。<br>请联系管理员获取今日最新邀请码后再重新扫码。</p>
-            </div>
-          `;
-        };
-      }
-    })();
-  </script>
-
+  <title>ApiPaw - 安全验证</title>
   <style>
-    /* 微信提示遮罩层样式 */
+    :root {
+      --bg-main: #0B0F17;
+      --card-bg: rgba(22, 27, 38, 0.65);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --card-border-glow: rgba(56, 189, 248, 0.25);
+      --primary-blue: #3b82f6;
+      --primary-green: #10b981;
+      --primary-green-hover: #059669;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --error-red: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.12);
+      --error-border: rgba(239, 68, 68, 0.25);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* 动态背景光晕特效 */
+    .bg-glow {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .glow-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.35;
+      animation: floatOrb 12s infinite ease-in-out alternate;
+    }
+
+    .glow-1 {
+      width: 320px;
+      height: 320px;
+      background: #3b82f6;
+      top: -60px;
+      left: -60px;
+    }
+
+    .glow-2 {
+      width: 380px;
+      height: 380px;
+      background: #10b981;
+      bottom: -100px;
+      right: -100px;
+      animation-delay: -6s;
+    }
+
+    @keyframes floatOrb {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(30px, 40px) scale(1.15); }
+    }
+
+    /* 现代高定玻璃拟态卡片 */
+    .card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 400px;
+      background: var(--card-bg);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid var(--card-border);
+      border-radius: 28px;
+      padding: 38px 28px 32px;
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 1px 1px rgba(255, 255, 255, 0.15);
+      text-align: center;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* 图标容器与动态发光 */
+    .icon-box {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 32px;
+      box-shadow: 
+        0 12px 28px -6px rgba(37, 99, 235, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      position: relative;
+      animation: iconFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #ffffff;
+      letter-spacing: -0.4px;
+      background: linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+      line-height: 1.6;
+      font-weight: 400;
+    }
+
+    /* 输入框样式 */
+    .input-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 16px 18px;
+      background: rgba(11, 15, 23, 0.65);
+      border: 1.5px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 500;
+      outline: none;
+      transition: all 0.25s ease;
+      text-align: center;
+      letter-spacing: 2px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    input[type="text"]:focus {
+      border-color: #60a5fa;
+      background: rgba(11, 15, 23, 0.85);
+      box-shadow: 
+        0 0 0 4px rgba(96, 165, 250, 0.2),
+        inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    input[type="text"]::placeholder {
+      color: #4b5563;
+      font-size: 14px;
+      letter-spacing: normal;
+      font-weight: 400;
+    }
+
+    /* 按钮样式 */
+    .btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 8px 20px -4px rgba(16, 185, 129, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:hover {
+      background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+      box-shadow: 0 12px 24px -4px rgba(16, 185, 129, 0.55);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 4px 12px -2px rgba(16, 185, 129, 0.3);
+    }
+
+    /* 错误提示胶囊卡片 */
+    .error-tip {
+      color: #fca5a5;
+      font-size: 13px;
+      margin-top: 16px;
+      padding: 10px 14px;
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      border-radius: 12px;
+      min-height: 20px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      backdrop-filter: blur(8px);
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 错误抖动特效 */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      15%, 45%, 75% { transform: translateX(-6px); }
+      30%, 60%, 90% { transform: translateX(6px); }
+    }
+
+    .shake {
+      animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    /* 微信引导遮罩高级美化 */
     #weixin-mask {
       display: none;
       position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      color: #fff;
-      text-align: right;
-      padding: 20px;
-      box-sizing: border-box;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(11, 15, 23, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       z-index: 99999;
-      font-size: 16px;
+      color: #fff;
+      padding: 24px;
     }
-    #weixin-mask img {
-      width: 80%;
-      max-width: 300px;
-      margin-bottom: 10px;
+
+    .weixin-guide-box {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      max-width: 280px;
+    }
+
+    .guide-arrow {
+      font-size: 32px;
+      margin-bottom: 8px;
+      display: inline-block;
+      color: #38bdf8;
+      animation: floatArrow 1.5s infinite ease-in-out;
+    }
+
+    @keyframes floatArrow {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(6px, -8px); }
+    }
+
+    .guide-content {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 18px;
+      padding: 16px 20px;
+      text-align: right;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .guide-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #ffffff;
+    }
+
+    .guide-desc {
+      font-size: 13px;
+      color: #9ca3af;
+      line-height: 1.5;
     }
   </style>
 </head>
 <body>
 
-  <!-- 微信浏览器引导遮罩 -->
-  <div id="weixin-mask">
-    <div style="padding-right: 20px; font-size: 18px; font-weight: bold; margin-bottom: 10px;">
-      ↗ 点击右上角按钮
+  <!-- 背景光晕粒子氛围 -->
+  <div class="bg-glow">
+    <div class="glow-orb glow-1"></div>
+    <div class="glow-orb glow-2"></div>
+  </div>
+
+  <!-- 主卡片：邀请码验证 -->
+  <div class="card" id="auth-card">
+    <div class="icon-box">🔐</div>
+    <h2>访问安全验证</h2>
+    <p>请输入动态邀请码以解锁</p>
+
+    <div class="input-group">
+      <input type="text" id="passcode" placeholder="输入今日邀请码" autocomplete="off" autocorrect="off" capitalized="off">
     </div>
-    <div style="padding-right: 20px; font-size: 15px; color: #ddd;">
-      选择“在浏览器打开”以完成下载
+
+    <button class="btn" id="verify-btn" onclick="handleVerify()">立即解锁并下载</button>
+
+    <div class="error-tip" id="error-tip">
+      <span>⚠️ 邀请码错误或已失效，请重新输入</span>
     </div>
   </div>
 
-  <!-- 主页面分流与跳转逻辑 -->
+  <!-- 验证成功/开始下载提示 -->
+  <div class="card" id="success-card" style="display: none;">
+    <div class="icon-box" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 12px 28px -6px rgba(16, 185, 129, 0.45);">🚀</div>
+    <h2>验证通过</h2>
+    <p id="status-text">正在为您调起安装包下载...</p>
+  </div>
+
+  <!-- 微信浏览器引导遮罩 -->
+  <div id="weixin-mask">
+    <div class="weixin-guide-box">
+      <div class="guide-arrow">↗</div>
+      <div class="guide-content">
+        <div class="guide-title">点击右上角菜单</div>
+        <div class="guide-desc">选择 “在浏览器打开” 即可自动完成下载</div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    window.addEventListener("DOMContentLoaded", function() {
-      // ================= 真实下载地址 =================
-      var REAL_APK_URL = "https://github.com/dazhuang54/APIPAW-Release/releases/download/v1.6/ApiPaw_1.6-fdroid_arm64-v8a.apk";
-      // ===============================================
+    // 配置参数
+    var SECRET_SALT = "paw";
+    var REAL_APK_URL = "https://github.com/dazhuang54/APIPAW-Release/releases/download/v1.6/ApiPaw_1.6-fdroid_arm64-v8a.apk";
 
-      var ua = navigator.userAgent.toLowerCase();
-      var isWeChat = ua.indexOf("micromessenger") !== -1;
+    // 获取今日动态邀请码
+    function getTodayCode() {
+      var now = new Date();
+      var month = String(now.getMonth() + 1).padStart(2, '0');
+      var day = String(now.getDate()).padStart(2, '0');
+      return (month + day + SECRET_SALT).toLowerCase();
+    }
 
-      if (isWeChat) {
-        // 微信环境：显示“右上角用浏览器打开”引导
-        document.getElementById("weixin-mask").style.display = "block";
+    // 验证逻辑
+    function handleVerify() {
+      var inputEl = document.getElementById("passcode");
+      var cardEl = document.getElementById("auth-card");
+      var errorEl = document.getElementById("error-tip");
+      var userCode = inputEl.value.trim().toLowerCase();
+      var todayCode = getTodayCode();
+
+      if (userCode === todayCode) {
+        // 验证成功
+        errorEl.style.display = "none";
+        cardEl.style.display = "none";
+
+        var ua = navigator.userAgent.toLowerCase();
+        var isWeChat = ua.indexOf("micromessenger") !== -1;
+
+        if (isWeChat) {
+          // 微信环境提示
+          document.getElementById("weixin-mask").style.display = "block";
+        } else {
+          // 普通浏览器，拉起下载
+          document.getElementById("success-card").style.display = "block";
+          window.location.href = REAL_APK_URL;
+        }
       } else {
-        // 普通浏览器环境：直接拉起 APK 下载
-        window.location.href = REAL_APK_URL;
+        // 验证失败：触发抖动与红字提示
+        errorEl.style.display = "flex";
+        cardEl.classList.remove("shake");
+        void cardEl.offsetWidth; // 触发 reflow 重置动画
+        cardEl.classList.add("shake");
+        inputEl.focus();
+      }
+    }
+
+    // 支持回车按键提交
+    document.getElementById("passcode").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        handleVerify();
       }
     });
   </script>
