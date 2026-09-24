@@ -24,7 +24,7 @@
       // 拼接当日专属邀请码（如：0924paw）
       var TODAY_CODE = (month + day + SECRET_SALT).toLowerCase();
 
-      var input = prompt("🔐 本页面已受保护，请输入今日动态邀请码：");
+      var input = prompt("🔐 本页面已受保护，请输入动态邀请码：");
       var userCode = input ? input.trim().toLowerCase() : "";
 
       if (userCode === TODAY_CODE) {
