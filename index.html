@@ -17,7 +17,6 @@
       var SECRET_SALT = "paw"; // 专属固定密钥
       // ============================================
 
-      // 获取用户手机本地时间的月份和日期（如 9月24日 -> "0924"）
       var now = new Date();
       var month = String(now.getMonth() + 1).padStart(2, '0');
       var day = String(now.getDate()).padStart(2, '0');
@@ -25,13 +24,10 @@
       // 拼接当日专属邀请码（如：0924paw）
       var TODAY_CODE = (month + day + SECRET_SALT).toLowerCase();
 
-      // 弹出防伪验证框
       var input = prompt("🔐 本页面已受保护，请输入今日动态邀请码：");
       var userCode = input ? input.trim().toLowerCase() : "";
 
-      // 校验逻辑
       if (userCode === TODAY_CODE) {
-        // 验证通过：移除遮罩，正常渲染页面并执行跳转
         function unlock() {
           var style = document.getElementById("protection-style");
           if (style) style.remove();
@@ -42,7 +38,6 @@
           unlock();
         }
       } else {
-        // 验证失败或取消：拦截页面
         alert("❌ 邀请码错误或已失效！");
         window.onload = function() {
           document.body.style.display = "block";
@@ -94,25 +89,19 @@
   <!-- 主页面分流与跳转逻辑 -->
   <script>
     window.addEventListener("DOMContentLoaded", function() {
-      // ================= 配置你的下载地址 =================
-      var IOS_APPSTORE_URL = "https://apps.apple.com/app/idYOUR_APP_ID"; // iOS 苹果商店地址
-      var ANDROID_APK_URL  = "https://your-domain.com/app.apk";           // Android APK 直链地址
-      // ===================================================
+      // ================= 真实下载地址 =================
+      var REAL_APK_URL = "https://github.com/dazhuang54/APIPAW-Release/releases/download/v1.6/ApiPaw_1.6-fdroid_arm64-v8a.apk";
+      // ===============================================
 
       var ua = navigator.userAgent.toLowerCase();
       var isWeChat = ua.indexOf("micromessenger") !== -1;
-      var isIOS = /iphone|ipad|ipod/.test(ua);
 
       if (isWeChat) {
         // 微信环境：显示“右上角用浏览器打开”引导
         document.getElementById("weixin-mask").style.display = "block";
       } else {
-        // 普通浏览器环境：自动按设备跳转下载
-        if (isIOS) {
-          window.location.href = IOS_APPSTORE_URL;
-        } else {
-          window.location.href = ANDROID_APK_URL;
-        }
+        // 普通浏览器环境：直接拉起 APK 下载
+        window.location.href = REAL_APK_URL;
       }
     });
   </script>
