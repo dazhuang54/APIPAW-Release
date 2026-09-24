@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>应用下载引导</title>
+  
+  <!-- 1. 防护样式：未通过验证前隐匿页面内容 -->
+  <style id="protection-style">
+    body { display: none !important; }
+  </style>
+
+  <!-- 2. 动态邀请码核心拦截逻辑 -->
+  <script>
+    (function() {
+      // ================= 密钥配置 =================
+      var SECRET_SALT = "paw"; // 专属固定密钥
+      // ============================================
+
+      // 获取用户手机本地时间的月份和日期（如 9月24日 -> "0924"）
+      var now = new Date();
+      var month = String(now.getMonth() + 1).padStart(2, '0');
+      var day = String(now.getDate()).padStart(2, '0');
+
+      // 拼接当日专属邀请码（如：0924paw）
+      var TODAY_CODE = (month + day + SECRET_SALT).toLowerCase();
+
+      // 弹出防伪验证框
+      var input = prompt("🔐 本页面已受保护，请输入今日动态邀请码：");
+      var userCode = input ? input.trim().toLowerCase() : "";
+
+      // 校验逻辑
+      if (userCode === TODAY_CODE) {
+        // 验证通过：移除遮罩，正常渲染页面并执行跳转
+        function unlock() {
+          var style = document.getElementById("protection-style");
+          if (style) style.remove();
+        }
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", unlock);
+        } else {
+          unlock();
+        }
+      } else {
+        // 验证失败或取消：拦截页面
+        alert("❌ 邀请码错误或已失效！");
+        window.onload = function() {
+          document.body.style.display = "block";
+          document.body.innerHTML = `
+            <div style="text-align: center; padding: 100px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+              <div style="font-size: 50px; margin-bottom: 20px;">⚠️</div>
+              <h2 style="color: #e74c3c; margin-bottom: 12px; font-size: 22px;">访问验证失败</h2>
+              <p style="color: #666; font-size: 15px; line-height: 1.6;">邀请码错误或已过期。<br>请联系管理员获取今日最新邀请码后再重新扫码。</p>
+            </div>
+          `;
+        };
+      }
+    })();
+  </script>
+
+  <style>
+    /* 微信提示遮罩层样式 */
+    #weixin-mask {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      text-align: right;
+      padding: 20px;
+      box-sizing: border-box;
+      z-index: 99999;
+      font-size: 16px;
+    }
+    #weixin-mask img {
+      width: 80%;
+      max-width: 300px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 微信浏览器引导遮罩 -->
+  <div id="weixin-mask">
+    <div style="padding-right: 20px; font-size: 18px; font-weight: bold; margin-bottom: 10px;">
+      ↗ 点击右上角按钮
+    </div>
+    <div style="padding-right: 20px; font-size: 15px; color: #ddd;">
+      选择“在浏览器打开”以完成下载
+    </div>
+  </div>
+
+  <!-- 主页面分流与跳转逻辑 -->
+  <script>
+    window.addEventListener("DOMContentLoaded", function() {
+      // ================= 配置你的下载地址 =================
+      var IOS_APPSTORE_URL = "https://apps.apple.com/app/idYOUR_APP_ID"; // iOS 苹果商店地址
+      var ANDROID_APK_URL  = "https://your-domain.com/app.apk";           // Android APK 直链地址
+      // ===================================================
+
+      var ua = navigator.userAgent.toLowerCase();
+      var isWeChat = ua.indexOf("micromessenger") !== -1;
+      var isIOS = /iphone|ipad|ipod/.test(ua);
+
+      if (isWeChat) {
+        // 微信环境：显示“右上角用浏览器打开”引导
+        document.getElementById("weixin-mask").style.display = "block";
+      } else {
+        // 普通浏览器环境：自动按设备跳转下载
+        if (isIOS) {
+          window.location.href = IOS_APPSTORE_URL;
+        } else {
+          window.location.href = ANDROID_APK_URL;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
